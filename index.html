@@ -98,7 +98,7 @@
         PLAYER_BASE_SPEED: 4.2,
         PLAYER_BASE_AS_FREE: 1.40,  
         PLAYER_BASE_AS_ARENA: 1.50, 
-        PLAYER_RANGE: 260,
+        PLAYER_RANGE: 210,
         PLAYER_WINDUP_PROP: 0.22, 
         ENEMY_SLOW_MODIFIER: 0.45, 
         ENEMY_SLOW_DURATION: 0.5,  
@@ -183,11 +183,12 @@
     function showMainMenu() {
         menu.style.display = 'flex';
         menu.innerHTML = `
-            <h1>ARENA KITE TRAINER</h1>
+            <h1>KITE TRAINER</h1>
+            <img src="fotografinin-adi.png" alt="Oyun Logosu" style="width: 150px; height: auto; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(200, 170, 110, 0.2);">
             <p>Kontroller: Hareket (<span class="highlight">Sağ Tık</span>) | Attack Move (<span class="highlight">A + Sol Tık</span>)<br>
             Sıçra (<span class="highlight">F / Boşluk</span>) | Ulti (<span class="highlight">R - 15 Yükte Bir</span>) | Duraklatma (<span class="highlight">P</span>)</p>
             <div class="menu-row">
-                <button class="action-btn" style="border-color: #00ffcc;" onclick="startGame('FREE')">Klasik Free Kite Modu (Tek Ekran)</button>
+                <button class="action-btn" style="border-color: #00ffcc;" onclick="startGame('FREE')">Klasik Kite Modu (Sabit Ekran)</button>
                 <button class="action-btn" onclick="startGame('MELEE')">Sonsuz Arena (Yakın Dövüşçüler)</button>
                 <button class="action-btn" onclick="startGame('RANGED')">Sonsuz Arena (Menzilliler)</button>
             </div>
@@ -591,7 +592,7 @@
         }
 
         // Lethal Tempo menzili istek üzerine çok küçük bir artışa (+8 birim) nerflendi
-        player.range = CONFIG.PLAYER_RANGE + (currentMode === 'FREE' && player.lethalTempoStacks === 6 ? 8 : 0);
+        player.range = CONFIG.PLAYER_RANGE * (currentMode === 'FREE' && player.lethalTempoStacks === 6 ? 1.10 : 1.0);
 
         let totalAttackSpeed = getCurrentAS();
 
