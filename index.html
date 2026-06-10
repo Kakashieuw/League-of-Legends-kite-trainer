@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LoL Pro Kite Trainer - Ultimate Edition</title>
+    <title>Kite Trainer</title>
     <style>
         * { box-sizing: border-box; user-select: none; }
         body {
@@ -66,27 +66,119 @@
         }
         button.action-btn:hover { background: #1e2328; color: #fff; box-shadow: 0 0 15px rgba(200,170,110,0.4); }
         .tempo-stack { font-size: 13px; color: #ff0055; margin-left: 5px; font-weight: normal; }
+
+        /* Yeni Modal Stilleri */
+        #tutorial-modal {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(1, 10, 19, 0.98);
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 30px; z-index: 30;
+            cursor: default;
+        }
+        .lang-selector {
+            position: absolute; top: 20px; right: 25px; font-size: 16px; font-weight: bold; cursor: default;
+        }
+        .lang-btn {
+            cursor: pointer; transition: 0.2s;
+        }
+        .lang-btn:hover { text-shadow: 0 0 8px rgba(0,255,204,0.6); }
     </style>
 </head>
 <body>
 
 <div id="game-container">
     <div id="ui">
-        <div class="panel" id="hp-ui" style="color: #4CAF50;">CAN: 100</div>
-        <div class="panel" id="buff-ui" style="display: none;">HIZ: 0.0s</div>
-        <div class="panel" id="as-ui" style="color: #ffb703;">SALDIRI HIZI: 1.40 <span class="tempo-stack" id="tempo-ui">(+0.00) [0 Yük]</span></div>
-        <div class="panel" id="flash-ui">SIÇRA (F): HAZIR</div>
-        <div class="panel" id="ult-ui">ULTİ (R): 0 / 15</div>
-        <div class="panel" id="score-ui">SKOR: 0</div>
-        <div class="panel" id="best-ui" style="color: #00f2fe;">REKOR: 0</div>
+        <div class="panel" id="hp-ui" style="color: #4CAF50;">HP: 100</div>
+        <div class="panel" id="buff-ui" style="display: none;">SPD: 0.0s</div>
+        <div class="panel" id="as-ui" style="color: #ffb703;">ATK SPD: 1.40 <span class="tempo-stack" id="tempo-ui">(+0.00) [0 Stack]</span></div>
+        <div class="panel" id="flash-ui">FLASH (F): READY</div>
+        <div class="panel" id="ult-ui">ULT (R): 0 / 15</div>
+        <div class="panel" id="score-ui">SCORE: 0</div>
+        <div class="panel" id="best-ui" style="color: #00f2fe;">BEST: 0</div>
     </div>
 
-    <button id="god-btn">ÖLÜMSÜZLÜK: KAPALI</button>
+    <button id="god-btn">GOD MODE: OFF</button>
     <div id="menu"></div>
+    
+    <div id="tutorial-modal">
+        <h1 id="tut-title" style="color: #00ffcc; margin-bottom: 20px;">HOW TO PLAY</h1>
+        <p id="tut-controls" style="color: #a09b8c; max-width: 600px; line-height: 1.6; margin-bottom: 20px; font-size: 15px;"></p>
+        <p id="tut-desc" style="color: #c8aa6e; max-width: 550px; line-height: 1.6; margin-bottom: 30px; font-size: 16px; font-weight: bold;"></p>
+        <button id="tut-btn" class="action-btn" onclick="confirmTutorial()">I GOT IT</button>
+    </div>
+
     <canvas id="kiteCanvas" width="1100" height="700"></canvas>
 </div>
 
 <script>
+    // === DİL VE ÇEVİRİ SİSTEMİ ===
+    let currentLang = 'en';
+    
+    const i18n = {
+        en: {
+            title: "KITE TRAINER",
+            creator: "Created by Kakashi_euw",
+            btnFree: "Classic Free Kite Mode (Single Screen)",
+            btnMelee: "Endless Arena (Melee)",
+            btnRanged: "Endless Arena (Ranged)",
+            tutTitle: "HOW TO PLAY",
+            tutControls: 'Controls: Move (<span class="highlight">Right Click</span>) | Attack Move (<span class="highlight">A + Left Click</span>)<br>Flash (<span class="highlight">F / Space</span>) | Ultimate (<span class="highlight">R - Every 15 Stacks</span>) | Pause (<span class="highlight">P</span>)',
+            tutUnderstand: "I GOT IT",
+            tutFree: "In Free Mode, enemies spawn from the edges. Build your Lethal Tempo and kite perfectly to survive!",
+            tutMelee: "Survive against endless waves of melee enemies in the arena. Keep your distance and use obstacles to your advantage!",
+            tutRanged: "In this arena, enemies will shoot projectiles at you. Keep moving and dodge their attacks!",
+            hp: "HP", spd: "SPD", as: "ATK SPD", flash: "FLASH (F)", ready: "READY", ult: "ULT (R)", score: "SCORE", best: "BEST", 
+            godOn: "GOD MODE: ON", godOff: "GOD MODE: OFF",
+            overTitle: "CHAMPION SLAIN", overMode: "Mode:", overScore: "Score Reached:", overAs: "Max Attack Speed:", backToMenu: "Back to Main Menu",
+            stack: "Stack", max: "MAX", lethal: "LETHAL TEMPO",
+            fStop: "STOPPED", fRightClick: "RIGHT CLICK FIRST!", fCancel: "AA CANCEL!", fPerfect: "PERFECT!", fLate: "LATE REACTION!",
+            fFlash: "FLASH!", fHeal: "+20 HP!", fClear: "CLEARED!", fSlain: "SLAIN", fTempoLost: "TEMPO LOST!", fTempoCancel: "TEMPO CANCELED!",
+            fUltReady: "ULT READY (R)!", fSlow: "SLOWED", fPaused: "GAME PAUSED", fResume: "Press [P] again to resume"
+        },
+        tr: {
+            title: "KITE TRAINER",
+            creator: "Kakashi_euw tarafından yapılmıştır",
+            btnFree: "Klasik Free Kite Modu (Tek Ekran)",
+            btnMelee: "Sonsuz Arena (Yakın Dövüşçüler)",
+            btnRanged: "Sonsuz Arena (Menzilliler)",
+            tutTitle: "NASIL OYNANIR",
+            tutControls: 'Kontroller: Hareket (<span class="highlight">Sağ Tık</span>) | Attack Move (<span class="highlight">A + Sol Tık</span>)<br>Sıçra (<span class="highlight">F / Boşluk</span>) | Ulti (<span class="highlight">R - 15 Yükte Bir</span>) | Duraklatma (<span class="highlight">P</span>)',
+            tutUnderstand: "ANLADIM",
+            tutFree: "Kenarlardan gelen düşmanlardan kaç. Ölümcül Tempo biriktir ve hayatta kalmak için kusursuz kite at!",
+            tutMelee: "Arenada sonsuz yakın dövüşçü dalgasına karşı hayatta kal. Engelleri kendi avantajına kullan ve mesafeni koru!",
+            tutRanged: "Düşmanlar sana yetenek atışları yapacak. Sürekli hareket et ve saldırılardan kaç!",
+            hp: "CAN", spd: "HIZ", as: "SALDIRI HIZI", flash: "SIÇRA (F)", ready: "HAZIR", ult: "ULTİ (R)", score: "SKOR", best: "REKOR", 
+            godOn: "ÖLÜMSÜZLÜK: AÇIK", godOff: "ÖLÜMSÜZLÜK: KAPALI",
+            overTitle: "ŞAMPİYON KATLEDİLDİ", overMode: "Mod:", overScore: "Ulaşılan Skor:", overAs: "Maksimum Saldırı Hızı:", backToMenu: "Ana Menüye Dön",
+            stack: "Yük", max: "MAX", lethal: "ÖLÜMCÜL TEMPO",
+            fStop: "DURDURULDU", fRightClick: "ÖNCE SAĞ TIK!", fCancel: "AA İPTAL!", fPerfect: "KUSURSUZ!", fLate: "GEÇ TEPKİ!",
+            fFlash: "SIÇRA!", fHeal: "+20 CAN!", fClear: "TEMİZLİK!", fSlain: "KATLEDİLDİ", fTempoLost: "TEMPO KAYBEDİLDİ!", fTempoCancel: "TEMPO İPTAL!",
+            fUltReady: "ULTİ HAZIR (R)!", fSlow: "YAVAŞLADI", fPaused: "OYUN DURDURULDU", fResume: "Devam etmek için tekrar [P] tuşuna basın"
+        }
+    };
+
+    function setLang(lang) {
+        currentLang = lang;
+        showMainMenu();
+        updateStaticUI();
+    }
+
+    function updateStaticUI() {
+        const txt = i18n[currentLang];
+        hpUi.innerText = `${txt.hp}: ${Math.max(0, player.hp)}`;
+        scoreUi.innerText = `${txt.score}: ${score}`;
+        bestUi.innerText = `${txt.best}: ${highScore}`;
+        godBtn.innerText = godMode ? txt.godOn : txt.godOff;
+        updateASUI();
+        updateUltUI();
+        
+        if (player.flashCooldown <= 0) {
+            flashUi.innerText = `${txt.flash}: ${txt.ready}`;
+        } else {
+            flashUi.innerText = `${txt.flash}: ${Math.ceil(player.flashCooldown)}s`;
+        }
+    }
+
     const canvas = document.getElementById('kiteCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -98,7 +190,7 @@
         PLAYER_BASE_SPEED: 4.2,
         PLAYER_BASE_AS_FREE: 1.40,  
         PLAYER_BASE_AS_ARENA: 1.50, 
-        PLAYER_RANGE: 210,
+        PLAYER_RANGE: 200,
         PLAYER_WINDUP_PROP: 0.22, 
         ENEMY_SLOW_MODIFIER: 0.45, 
         ENEMY_SLOW_DURATION: 0.5,  
@@ -120,7 +212,6 @@
     window.addEventListener('contextmenu', e => e.preventDefault());
 
     let highScore = parseInt(localStorage.getItem('kiteTrainerRecord_v4')) || 0;
-    bestUi.innerText = `REKOR: ${highScore}`;
 
     let active = false;
     let isPaused = false;
@@ -132,6 +223,7 @@
     let spawnTimer = 0;
     let godMode = false;
     let currentMode = 'FREE'; 
+    let selectedModeForTutorial = '';
     
     let freeKillsForHeal = 0;
     let arenaSpawnCount = 0;
@@ -151,7 +243,7 @@
         inBackswing: false, backswingTimer: 0, maxBackswing: 0,
         lethalTempoStacks: 0,  
         attackMoveTarget: null,
-        hasMovedSinceLastAttack: true // Kite zorunluluğu sağlayan yeni kontrol değişkenimiz
+        hasMovedSinceLastAttack: true
     };
 
     let attackMoveMode = false; 
@@ -181,46 +273,75 @@
     }
 
     function showMainMenu() {
+        const txt = i18n[currentLang];
         menu.style.display = 'flex';
         menu.innerHTML = `
-            <h1>KITE TRAINER</h1>
-            <img src="fotografinin-adi.png" alt="Oyun Logosu" style="width: 150px; height: auto; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(200, 170, 110, 0.2);">
-            <p>Kontroller: Hareket (<span class="highlight">Sağ Tık</span>) | Attack Move (<span class="highlight">A + Sol Tık</span>)<br>
-            Sıçra (<span class="highlight">F / Boşluk</span>) | Ulti (<span class="highlight">R - 15 Yükte Bir</span>) | Duraklatma (<span class="highlight">P</span>)</p>
-            <div class="menu-row">
-                <button class="action-btn" style="border-color: #00ffcc;" onclick="startGame('FREE')">Klasik Kite Modu (Sabit Ekran)</button>
-                <button class="action-btn" onclick="startGame('MELEE')">Sonsuz Arena (Yakın Dövüşçüler)</button>
-                <button class="action-btn" onclick="startGame('RANGED')">Sonsuz Arena (Menzilliler)</button>
+            <div class="lang-selector">
+                <span class="lang-btn" onclick="setLang('en')" style="color: ${currentLang === 'en' ? '#00ffcc' : '#c8aa6e'};">EN</span>
+                <span style="color: #555; margin: 0 5px;">|</span>
+                <span class="lang-btn" onclick="setLang('tr')" style="color: ${currentLang === 'tr' ? '#00ffcc' : '#c8aa6e'};">TR</span>
             </div>
-<div style="display: flex; gap: 20px; justify-content: center; margin-top: 25px;">
-    <a href="https://instagram.com/kakashi_euw" target="_blank" style="transition: 0.2s;">
-        <img src="ig-logo.png" style="width: 45px; cursor: pointer;">
-    </a>
-
-    <a href="https://kick.com/kakashi-euw" target="_blank" style="transition: 0.2s;">
-        <img src="kick-logo.png" style="width: 45px; cursor: pointer;">
-    </a>
-</div>
+            <h1>${txt.title}</h1>
+            <img src="fotografinin-adi.png" alt="Oyun Logosu" style="width: 150px; height: auto; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(200, 170, 110, 0.2);">
+            <p style="margin-bottom: 5px;">${txt.creator}</p>
+            <p style="margin-bottom: 25px;">${txt.tutControls}</p>
+            <div class="menu-row">
+                <button class="action-btn" style="border-color: #00ffcc;" onclick="openTutorial('FREE')">${txt.btnFree}</button>
+                <button class="action-btn" onclick="openTutorial('MELEE')">${txt.btnMelee}</button>
+                <button class="action-btn" onclick="openTutorial('RANGED')">${txt.btnRanged}</button>
+            </div>
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 25px;">
+                <a href="https://instagram.com/kakashi_euw" target="_blank" style="transition: 0.2s;">
+                    <img src="ig-logo.png" style="width: 45px; cursor: pointer;" alt="IG">
+                </a>
+                <a href="https://kick.com/kakashi-euw" target="_blank" style="transition: 0.2s;">
+                    <img src="kick-logo.png" style="width: 45px; cursor: pointer;" alt="Kick">
+                </a>
+            </div>
         `;
+    }
+
+    function openTutorial(mode) {
+        selectedModeForTutorial = mode;
+        menu.style.display = 'none';
+        
+        const txt = i18n[currentLang];
+        document.getElementById('tut-title').innerText = txt.tutTitle;
+        document.getElementById('tut-controls').innerHTML = txt.tutControls;
+        document.getElementById('tut-btn').innerText = txt.tutUnderstand;
+        
+        const desc = document.getElementById('tut-desc');
+        if(mode === 'FREE') desc.innerHTML = txt.tutFree;
+        if(mode === 'MELEE') desc.innerHTML = txt.tutMelee;
+        if(mode === 'RANGED') desc.innerHTML = txt.tutRanged;
+        
+        document.getElementById('tutorial-modal').style.display = 'flex';
+    }
+
+    function confirmTutorial() {
+        document.getElementById('tutorial-modal').style.display = 'none';
+        startGame(selectedModeForTutorial);
     }
 
     function showGameOver() {
         active = false; menu.style.display = 'flex';
-        let modeText = 'Klasik Free Mod';
-        if (currentMode === 'MELEE') modeText = 'Sonsuz Arena - Yakın Dövüş';
-        if (currentMode === 'RANGED') modeText = 'Sonsuz Arena - Menzilli';
+        const txt = i18n[currentLang];
+        let modeText = txt.btnFree;
+        if (currentMode === 'MELEE') modeText = txt.btnMelee;
+        if (currentMode === 'RANGED') modeText = txt.btnRanged;
 
         menu.innerHTML = `
-            <h1>ŞAMPİYON KATLEDİLDİ</h1>
-            <p>Mod: <span class="highlight">${modeText}</span><br>
-            Ulaşılan Skor: <span class="highlight">${score}</span><br>
-            Maksimum Saldırı Hızı: <span class="highlight">${getCurrentAS().toFixed(2)}</span></p>
-            <div class="menu-row"><button class="action-btn" onclick="showMainMenu()">Ana Menüye Dön</button></div>
+            <h1>${txt.overTitle}</h1>
+            <p>${txt.overMode} <span class="highlight">${modeText}</span><br>
+            ${txt.overScore} <span class="highlight">${score}</span><br>
+            ${txt.overAs} <span class="highlight">${getCurrentAS().toFixed(2)}</span></p>
+            <div class="menu-row"><button class="action-btn" onclick="showMainMenu()">${txt.backToMenu}</button></div>
         `;
     }
 
     function startGame(mode) {
         currentMode = mode;
+        const txt = i18n[currentLang];
         active = true; isPaused = false; isCountdown = false; countdownTimeLeft = 0; score = 0; consecutiveKills = 0; 
         
         freeKillsForHeal = 0;
@@ -236,7 +357,7 @@
         player.inBackswing = false; player.backswingTimer = 0;
         player.lethalTempoStacks = 0;
         player.attackMoveTarget = null;
-        player.hasMovedSinceLastAttack = true; // Başlangıçta serbest
+        player.hasMovedSinceLastAttack = true;
         
         if (currentMode === 'FREE') {
             player.x = canvas.width / 2; player.y = canvas.height / 2; obstacles = []; 
@@ -250,17 +371,15 @@
         enemies = []; projectiles = []; enemyProjectiles = []; floatTexts = []; shockwaves = []; clickMarker = null;
         isAttackMoving = false; attackMoveMode = false; spawnTimer = 0;
 
-        hpUi.innerText = `CAN: 100`; hpUi.style.color = "#4CAF50";
-        flashUi.innerText = `SIÇRA (F): HAZIR`; flashUi.style.borderColor = "#00f2fe";
-        updateASUI(); updateUltUI(); scoreUi.innerText = `SKOR: 0`; bestUi.innerText = `REKOR: ${highScore}`;
-        menu.style.display = 'none'; lastTime = performance.now();
+        updateStaticUI();
         
+        menu.style.display = 'none'; lastTime = performance.now();
         requestAnimationFrame(update);
     }
 
     godBtn.addEventListener('click', () => {
         godMode = !godMode;
-        godBtn.innerText = godMode ? "ÖLÜMSÜZLÜK: AÇIK" : "ÖLÜMSÜZLÜK: KAPALI";
+        godBtn.innerText = godMode ? i18n[currentLang].godOn : i18n[currentLang].godOff;
         godBtn.style.color = godMode ? "#00ffcc" : "#c8aa6e"; godBtn.style.borderColor = godMode ? "#00ffcc" : "#c8aa6e";
     });
 
@@ -285,7 +404,7 @@
             player.attackMoveTarget = null; 
             if (player.isWindingUp) {
                 player.isWindingUp = false; player.lockedTarget = null;
-                createFloatText(player.x, player.y - 20, "DURDURULDU", "#ffffff");
+                createFloatText(player.x, player.y - 20, i18n[currentLang].fStop, "#ffffff");
             }
         }
         if (key === 'f' || e.key === ' ') castFlash(); 
@@ -308,9 +427,8 @@
         if (e.button === 0 && attackMoveMode) { 
             attackMoveMode = false;
             
-            // Suistimal Koruması: Oyuncu sağ tıkla hareket etmediyse yeni hedefe kilitlenmeyi engelle
             if (!player.hasMovedSinceLastAttack) {
-                createFloatText(player.x, player.y - 20, "ÖNCE SAĞ TIK!", "#ff0055");
+                createFloatText(player.x, player.y - 20, i18n[currentLang].fRightClick, "#ff0055");
                 return;
             }
             
@@ -337,11 +455,11 @@
             attackMoveMode = false; 
             isAttackMoving = false; 
             player.attackMoveTarget = null; 
-            player.hasMovedSinceLastAttack = true; // Sağ tık yapıldığı için kilit açıldı!
+            player.hasMovedSinceLastAttack = true;
             
             if (player.isWindingUp) {
                 player.isWindingUp = false; player.lockedTarget = null; player.targetX = mX; player.targetY = mY;
-                createFloatText(player.x, player.y - 20, "AA İPTAL!", "#ff4d4d");
+                createFloatText(player.x, player.y - 20, i18n[currentLang].fCancel, "#ff4d4d");
                 clickMarker = { x: mX, y: mY, r: 2, alpha: 1, color: '255, 77, 77' }; return; 
             }
 
@@ -350,11 +468,11 @@
                 
                 if (player.backswingTimer > requiredBackswingTime) { 
                     player.inBackswing = false; player.backswingTimer = 0; player.targetX = mX; player.targetY = mY;
-                    createFloatText(player.x, player.y - 20, "KUSURSUZ!", "#00ffcc");
+                    createFloatText(player.x, player.y - 20, i18n[currentLang].fPerfect, "#00ffcc");
                     clickMarker = { x: mX, y: mY, r: 2, alpha: 1, color: '0, 255, 200' };
                 } else {
                     player.targetX = mX; player.targetY = mY;
-                    createFloatText(player.x, player.y - 20, "GEÇ TEPKİ!", "#ffb703");
+                    createFloatText(player.x, player.y - 20, i18n[currentLang].fLate, "#ffb703");
                     clickMarker = { x: mX, y: mY, r: 2, alpha: 1, color: '255, 183, 3' };
                 }
                 return;
@@ -399,7 +517,7 @@
             });
         }
 
-        createFloatText(player.x, player.y, "SIÇRA!", "#00f2fe");
+        createFloatText(player.x, player.y, i18n[currentLang].fFlash, "#00f2fe");
         player.x = targetX; player.y = targetY; player.targetX = targetX; player.targetY = targetY;
         player.isWindingUp = false; player.lockedTarget = null; player.hasBufferedTarget = false;
         player.inBackswing = false; player.backswingTimer = 0; player.flashCooldown = CONFIG.FLASH_COOLDOWN;
@@ -411,9 +529,9 @@
             if (freeKillsForHeal >= 20) {
                 freeKillsForHeal -= 20; 
                 player.hp = Math.min(100, player.hp + 20);
-                hpUi.innerText = `CAN: ${Math.max(0, player.hp)}`;
+                hpUi.innerText = `${i18n[currentLang].hp}: ${Math.max(0, player.hp)}`;
                 hpUi.style.color = player.hp > 40 ? "#4CAF50" : "#ff4d4d";
-                createFloatText(player.x, player.y - 40, "+20 CAN!", "#4CAF50");
+                createFloatText(player.x, player.y - 40, i18n[currentLang].fHeal, "#4CAF50");
             }
         } else {
             msBuffTimer = 3.0; 
@@ -424,7 +542,7 @@
         if (!player.customUltReady) return;
 
         shockwaves.push({ x: player.x, y: player.y, r: 10, maxR: 700, alpha: 1 });
-        createFloatText(player.x, player.y - 40, "TEMIZLIK!", "#ff00ff");
+        createFloatText(player.x, player.y - 40, i18n[currentLang].fClear, "#ff00ff");
 
         if (enemies.length > 0) {
             enemies.forEach(e => {
@@ -432,20 +550,19 @@
                 handleKillReward();
                 
                 if (currentMode === 'FREE') {
-                    // Kalıcı hız artışı üst sınırı 3.00'e kilitlendi
                     if (score % 5 === 0) player.baseAttackSpeed = Math.min(3.00, player.baseAttackSpeed + 0.06); 
                 } else {
                     if (player.baseAttackSpeed < 3.00) player.baseAttackSpeed += 0.025;
                 }
 
-                createFloatText(e.x, e.y, "KATLEDİLDİ", "#ff00ff");
+                createFloatText(e.x, e.y, i18n[currentLang].fSlain, "#ff00ff");
             });
             enemies = []; 
             
-            scoreUi.innerText = `SKOR: ${score}`;
+            scoreUi.innerText = `${i18n[currentLang].score}: ${score}`;
             if (score > highScore) {
                 highScore = score; localStorage.setItem('kiteTrainerRecord_v4', highScore);
-                bestUi.innerText = `REKOR: ${highScore}`;
+                bestUi.innerText = `${i18n[currentLang].best}: ${highScore}`;
             }
         }
 
@@ -458,7 +575,6 @@
 
     function getCurrentAS() {
         if (currentMode === 'FREE') {
-            // Lethal Tempo açıkken üst sınır maksimum 3.50 olarak hesaplanır
             let totalAS = player.baseAttackSpeed * (1 + LETHAL_TEMPO_BONUSES[player.lethalTempoStacks]);
             return Math.min(3.50, totalAS);
         } else {
@@ -469,25 +585,27 @@
     }
     
     function updateASUI() {
+        const txt = i18n[currentLang];
         if (currentMode === 'FREE') {
             let totalAS = getCurrentAS();
-            let stackText = player.lethalTempoStacks === 6 ? "MAX" : player.lethalTempoStacks;
+            let stackText = player.lethalTempoStacks === 6 ? txt.max : player.lethalTempoStacks;
             let currentBonusPct = (LETHAL_TEMPO_BONUSES[player.lethalTempoStacks] * 100).toFixed(0);
-            asUi.innerHTML = `SALDIRI HIZI: ${totalAS.toFixed(2)} <span class="tempo-stack" style="color:#00ffcc;">[ÖLÜMCÜL TEMPO: ${stackText} YÜK (+%${currentBonusPct})]</span>`;
+            asUi.innerHTML = `${txt.as}: ${totalAS.toFixed(2)} <span class="tempo-stack" style="color:#00ffcc;">[${txt.lethal}: ${stackText} ${txt.stack} (+%${currentBonusPct})]</span>`;
         } else {
             let maxStacks = 6;
             let stacks = Math.min(maxStacks, Math.floor(consecutiveKills / 3));
             let bonusAS = player.baseAttackSpeed * (stacks * 0.08);
-            asUi.innerHTML = `SALDIRI HIZI: ${player.baseAttackSpeed.toFixed(2)} <span class="tempo-stack">(+${bonusAS.toFixed(2)}) [${stacks} Yük]</span>`;
+            asUi.innerHTML = `${txt.as}: ${player.baseAttackSpeed.toFixed(2)} <span class="tempo-stack">(+${bonusAS.toFixed(2)}) [${stacks} ${txt.stack}]</span>`;
         }
     }
 
     function updateUltUI() {
+        const txt = i18n[currentLang];
         let ultKey = 'R';
         if (player.customUltReady) {
-            ultUi.innerText = `ULTİ (${ultKey}): HAZIR!`; ultUi.style.color = "#ff00ff"; ultUi.style.borderColor = "#ff00ff";
+            ultUi.innerText = `${txt.ult}: ${txt.ready}!`; ultUi.style.color = "#ff00ff"; ultUi.style.borderColor = "#ff00ff";
         } else {
-            ultUi.innerText = `ULTİ (${ultKey}): ${player.ultKills} / 15`; ultUi.style.color = "#a09b8c"; ultUi.style.borderColor = "#c8aa6e";
+            ultUi.innerText = `${txt.ult}: ${player.ultKills} / 15`; ultUi.style.color = "#a09b8c"; ultUi.style.borderColor = "#c8aa6e";
         }
     }
 
@@ -538,15 +656,15 @@
 
     function takeDamage(amount) {
         if (!active || godMode) return; 
-        player.hp -= amount; hpUi.innerText = `CAN: ${Math.max(0, player.hp)}`;
+        player.hp -= amount; hpUi.innerText = `${i18n[currentLang].hp}: ${Math.max(0, player.hp)}`;
         if(player.hp <= 40) hpUi.style.color = "#ff4d4d"; else hpUi.style.color = "#4CAF50";
         
-        if (currentMode !== 'FREE' && consecutiveKills >= 3) createFloatText(player.x, player.y - 30, "TEMPO KAYBEDİLDİ!", "#ff0055");
+        if (currentMode !== 'FREE' && consecutiveKills >= 3) createFloatText(player.x, player.y - 30, i18n[currentLang].fTempoLost, "#ff0055");
         consecutiveKills = 0;
         
         if (currentMode === 'FREE' && player.lethalTempoStacks > 0) {
             player.lethalTempoStacks = 0;
-            createFloatText(player.x, player.y - 20, "TEMPO İPTAL!", "#ff4d4d");
+            createFloatText(player.x, player.y - 20, i18n[currentLang].fTempoCancel, "#ff4d4d");
         }
 
         if (player.hp <= 0) showGameOver(); 
@@ -581,7 +699,7 @@
             msBuffTimer -= dt;
             player.speed = CONFIG.PLAYER_BASE_SPEED + 1.2; 
             buffUi.style.display = 'flex';
-            buffUi.innerText = `HIZ: ${msBuffTimer.toFixed(1)}s`;
+            buffUi.innerText = `${i18n[currentLang].spd}: ${msBuffTimer.toFixed(1)}s`;
             if (msBuffTimer <= 0) {
                 player.speed = CONFIG.PLAYER_BASE_SPEED;
                 buffUi.style.display = 'none';
@@ -591,7 +709,6 @@
             buffUi.style.display = 'none';
         }
 
-        // Lethal Tempo menzili istek üzerine çok küçük bir artışa (+8 birim) nerflendi
         player.range = CONFIG.PLAYER_RANGE * (currentMode === 'FREE' && player.lethalTempoStacks === 6 ? 1.10 : 1.0);
 
         let totalAttackSpeed = getCurrentAS();
@@ -612,9 +729,9 @@
 
         if (player.flashCooldown > 0) {
             player.flashCooldown -= dt;
-            flashUi.innerText = `SIÇRA (F): ${Math.ceil(player.flashCooldown)}s`; flashUi.style.borderColor = "#ff4d4d";
+            flashUi.innerText = `${i18n[currentLang].flash}: ${Math.ceil(player.flashCooldown)}s`; flashUi.style.borderColor = "#ff4d4d";
         } else {
-            flashUi.innerText = `SIÇRA (F): HAZIR`; flashUi.style.borderColor = "#00f2fe";
+            flashUi.innerText = `${i18n[currentLang].flash}: ${i18n[currentLang].ready}`; flashUi.style.borderColor = "#00f2fe";
         }
 
         if (!player.isWindingUp && !player.inBackswing && isAttackMoving) {
@@ -625,16 +742,14 @@
                 } else {
                     let distToTarget = Math.hypot(player.attackMoveTarget.x - player.x, player.attackMoveTarget.y - player.y);
                     if (distToTarget <= player.range) {
-                        // Eğer oyuncu ritme uyup sağ tıkla hareket ettiyse atışa izin ver
-                        if (player.hasMovedSinceLastAttack) {
+                        if (distToTarget <= player.range + player.attackMoveTarget.radius) {
                             player.targetX = player.x; player.targetY = player.y;
                             if (player.cooldownTimer <= 0) {
                                 player.isWindingUp = true; player.lockedTarget = player.attackMoveTarget;
                                 player.windupTimer = (1 / totalAttackSpeed) * CONFIG.PLAYER_WINDUP_PROP;
-                                player.hasMovedSinceLastAttack = false; // Atış başladı, kilit kapandı!
+                                player.hasMovedSinceLastAttack = false; 
                             }
                         } else {
-                            // Sağ tık yapmadıysa sadece hedefe doğru yürür ama ateş etmez
                             player.targetX = player.attackMoveTarget.x;
                             player.targetY = player.attackMoveTarget.y;
                         }
@@ -762,7 +877,6 @@
                         handleKillReward();
                         
                         if (currentMode === 'FREE') {
-                            // Kalıcı taban hız artışı üst sınırı tam olarak 3.00'e kilitlendi
                             if (score % 5 === 0) player.baseAttackSpeed = Math.min(3.00, player.baseAttackSpeed + 0.06); 
                         } else {
                             if (player.baseAttackSpeed < 3.00) player.baseAttackSpeed += 0.025; 
@@ -771,17 +885,17 @@
                         if (!player.customUltReady) {
                             player.customUltReady = false; player.ultKills++;
                             if (player.ultKills >= 15) {
-                                player.customUltReady = true; createFloatText(player.x, player.y - 40, "ULTİ HAZIR (R)!", "#ff00ff");
+                                player.customUltReady = true; createFloatText(player.x, player.y - 40, i18n[currentLang].fUltReady, "#ff00ff");
                             }
                         }
                         updateUltUI();
 
-                        scoreUi.innerText = `SKOR: ${score}`;
+                        scoreUi.innerText = `${i18n[currentLang].score}: ${score}`;
                         if (score > highScore) {
-                            highScore = score; localStorage.setItem('kiteTrainerRecord_v4', highScore); bestUi.innerText = `REKOR: ${highScore}`;
+                            highScore = score; localStorage.setItem('kiteTrainerRecord_v4', highScore); bestUi.innerText = `${i18n[currentLang].best}: ${highScore}`;
                         }
                     } else {
-                        createFloatText(hitTarget.x, hitTarget.y - 15, "YAVAŞLADI", "#ffcc00");
+                        createFloatText(hitTarget.x, hitTarget.y - 15, i18n[currentLang].fSlow, "#ffcc00");
                     }
                 }
             } else {
@@ -890,11 +1004,12 @@
         }
 
         if (isPaused) {
+            const txt = i18n[currentLang];
             ctx.fillStyle = 'rgba(1, 10, 19, 0.75)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#c8aa6e'; ctx.font = 'bold 32px "Segoe UI", Arial, sans-serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('OYUN DURDURULDU', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt.fPaused, canvas.width / 2, canvas.height / 2 - 20);
             ctx.fillStyle = '#a09b8c'; ctx.font = '16px "Segoe UI", Arial, sans-serif';
-            ctx.fillText('Devam etmek için tekrar [P] tuşuna basın', canvas.width / 2, canvas.height / 2 + 25);
+            ctx.fillText(txt.fResume, canvas.width / 2, canvas.height / 2 + 25);
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; 
         }
 
@@ -934,7 +1049,7 @@
         }
     }
 
-    showMainMenu();
+    setLang('en');
 </script>
 </body>
 </html>
